@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ import org.json.simple.parser.ParseException;
 // TODO: cs/min, cs/gold/xp/etc at 10/20 min
 // TODO: overall kda/winrate, playtime in different tabs?
 // TODO: exclude remakes (matches with duration < 300 seconds)
+// TODO: when updating, store set of matches and check if match has already been fetched to prevent repeats
 
 public class LeagueStats {
 
@@ -31,6 +33,7 @@ public class LeagueStats {
 	
 	private String apiKey;
 	private MySqlHelper helper;
+	private Map<Long, JSONObject> cachedMatches;
 	
 	public LeagueStats() {
 		try {
@@ -39,6 +42,7 @@ public class LeagueStats {
 			throw new RuntimeException(e);
 		}
 		helper = new MySqlHelper();
+		cachedMatches = new HashMap<>();
 	}
 	
 	private void setApiKey() throws IOException {
@@ -86,7 +90,7 @@ public class LeagueStats {
                 if (timestamp <= mostRecent) return; // skip game that should already be stored
             	
             	long matchId = (long) match.get("gameId");
-            	int champId = ((Long) match.get("champion")).intValue();            	
+            	int champId = ((Long) match.get("champion")).intValue();
             	
             	addPlayerMatchStats(matchId, accountId, champId, mostRecent);
             	//System.out.printf("%d %d %d %d%n", matchId, champId, queue, timestamp);
@@ -97,12 +101,15 @@ public class LeagueStats {
 	}
 	
 	private void addPlayerMatchStats(long matchId, long accountId, int champId, long timestampLowerBound) {
-		String matchStatsUrl = "https://na1.api.riotgames.com/lol/match/v3/matches/" + matchId + "?api_key=" + apiKey;
-		
 		try {
-            String matchStatsJsonString = IOUtils.toString(new URL(matchStatsUrl), "utf-8");
-            Thread.sleep(1000); // rate limited to 10 per 10 seconds
-            JSONObject matchStatsJsonObject = (JSONObject) JSONValue.parseWithException(matchStatsJsonString);
+            JSONObject matchStatsJsonObject = cachedMatches.get(matchId); // get cached JSONObject if possible 
+            if (matchStatsJsonObject == null) { // only call Riot API and sleep if match not cached
+            	String matchStatsUrl = "https://na1.api.riotgames.com/lol/match/v3/matches/" + matchId + "?api_key=" + apiKey;
+            	String matchStatsJsonString = IOUtils.toString(new URL(matchStatsUrl), "utf-8");
+            	matchStatsJsonObject = (JSONObject) JSONValue.parseWithException(matchStatsJsonString);
+            	cachedMatches.put(matchId, matchStatsJsonObject); // cache for later
+            	Thread.sleep(1000); // rate limited to 10 per 10 seconds
+            }     
             
             int queueId = ((Long) matchStatsJsonObject.get("queueId")).intValue();
             if (!isValidQueueType(queueId)) return; // skip non-normal games
