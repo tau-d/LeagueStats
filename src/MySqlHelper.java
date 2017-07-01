@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.Map.Entry;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.ParseException;
 
 public class MySqlHelper {
 	
@@ -28,6 +30,12 @@ public class MySqlHelper {
 	protected static final String COL_DEATHS = "deaths";
 	protected static final String COL_ASSISTS = "assists";
 	protected static final String COL_WIN = "win";
+	protected static final String COL_CS_0_TO_10 = "cs0to10";
+	protected static final String COL_CS_10_TO_20 = "cs10to20";
+	protected static final String COL_GOLD_0_TO_10 = "gold0to10";
+	protected static final String COL_GOLD_10_TO_20 = "gold10to20";
+	protected static final String COL_XP_0_TO_10 = "xp0to10";
+	protected static final String COL_XP_10_TO_20 = "xp10to20";
 	
 	protected static final String TABLE_CHAMPIONS = "champions";
 	protected static final String COL_CHAMPION_ID = "championId"; // shared with playermatches table
@@ -40,6 +48,8 @@ public class MySqlHelper {
 	
 	private Connection conn;
 	
+	
+	// Constructors
 	public MySqlHelper(String url, String user, String pass) {
 		setConnection(url, user, pass);
 	}
@@ -47,7 +57,6 @@ public class MySqlHelper {
 	public MySqlHelper() {
 		setConnection();
 	}
-	
 	
 	private void setConnection(String url, String user, String pass) {
 		try {
@@ -84,7 +93,9 @@ public class MySqlHelper {
 		}
 	}
 
-	public void insertPlayerMatch(long accountId, long matchId, int champId, int queue, long timestamp, int kills, int deaths, int assists, boolean win) {
+	
+	// Methods
+	public void insertPlayerMatch(RiotApiHelper.PlayerMatchStats pms) {
 		if (conn == null) {
 			throw new IllegalStateException("mysql connection is null");
 		}
@@ -92,23 +103,32 @@ public class MySqlHelper {
 		PreparedStatement insertStmt = null;
 		String insertStr = 
 				"INSERT INTO " + TABLE_PLAYERMATCHES + " (" + 
-				COL_ACCOUNT_ID +  "," + COL_MATCH_ID +  "," + COL_CHAMPION_ID +  "," + 
-				COL_QUEUE +  "," + COL_TIMESTAMP +  "," + COL_KILLS +  "," + COL_DEATHS +  "," + 
-				COL_ASSISTS +  "," + COL_WIN + ") " + 
-				"VALUES(?,?,?,?,?,?,?,?,?)";
+					COL_ACCOUNT_ID +  "," + COL_MATCH_ID +  "," + COL_CHAMPION_ID +  "," + COL_QUEUE +  "," + 
+					COL_TIMESTAMP +  "," + COL_KILLS +  "," + COL_DEATHS +  "," + COL_ASSISTS +  "," + COL_WIN + "," +
+					COL_CS_0_TO_10 + "," + COL_CS_10_TO_20 + "," + COL_GOLD_0_TO_10 + "," + COL_GOLD_10_TO_20 + "," + COL_XP_0_TO_10 + "," + COL_XP_10_TO_20 + 
+				") " + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		
 		try {
 			conn.setAutoCommit(false);
 			insertStmt = conn.prepareStatement(insertStr);
-			insertStmt.setLong(1, matchId);
-			insertStmt.setLong(2, accountId);
-			insertStmt.setInt(3, champId);
-			insertStmt.setInt(4, queue);
-			insertStmt.setLong(5, timestamp);
-			insertStmt.setInt(6, kills);
-			insertStmt.setInt(7, deaths);
-			insertStmt.setInt(8, assists);
-			insertStmt.setBoolean(9, win);
+			
+			Integer index = 1;
+			insertStmt.setLong(index++, pms.getMatchId());
+			insertStmt.setLong(index++, pms.getAccountId());
+			insertStmt.setInt(index++, pms.getChampionId());
+			insertStmt.setInt(index++, pms.getQueueId());
+			insertStmt.setLong(index++, pms.getTimestamp());
+			insertStmt.setInt(index++, pms.getKills());
+			insertStmt.setInt(index++, pms.getDeaths());
+			insertStmt.setInt(index++, pms.getAssists());
+			insertStmt.setBoolean(index++, pms.getWin());
+			setFloatOrNull(insertStmt, index++, pms.getCs0to10());
+			setFloatOrNull(insertStmt, index++, pms.getCs10to20());
+			setFloatOrNull(insertStmt, index++, pms.getGold0to10());
+			setFloatOrNull(insertStmt, index++, pms.getGold10to20());
+			setFloatOrNull(insertStmt, index++, pms.getXp0to10());
+			setFloatOrNull(insertStmt, index++, pms.getXp10to20());
+			
 			System.out.println(insertStmt);
 			insertStmt.execute();
 			conn.commit();
@@ -121,8 +141,8 @@ public class MySqlHelper {
 			}
 		}
 	}
-
-	public List<Pair<String, Double>> getPlayerChampKDAs(long accountId) {
+	
+	public List<Pair<String, Double>> getPlayerChampKDAs(Long accountId) {
 		PreparedStatement selectKDA = null;
 		final String k = "totalKills";
 		final String d = "totalDeaths";
@@ -159,17 +179,13 @@ public class MySqlHelper {
 		}
 		return ret;
 	}
-	
-	public void getPlayerChampWinRate(long accountId) {
 		
-	}
-	
 	public void initChampionTable(JSONObject data) {
 		for (Object entry : data.entrySet()) {
 			Entry<Object, Object> champ = (Entry<Object, Object>) entry;
 			JSONObject obj = (JSONObject) champ.getValue();
 			
-			int champId = ((Long) obj.get("id")).intValue();
+			Integer champId = ((Long) obj.get("id")).intValue();
 			String name = (String) obj.get("name");
 			
 			PreparedStatement insertChamp = null;
@@ -181,7 +197,7 @@ public class MySqlHelper {
 			try {
 				conn.setAutoCommit(false);
 				insertChamp = conn.prepareStatement(insertStr);
-				insertChamp.setLong(1, champId);
+				insertChamp.setInt(1, champId);
 				insertChamp.setString(2, name);
 				insertChamp.execute();
 				conn.commit();
@@ -196,7 +212,7 @@ public class MySqlHelper {
 		}
 	}
 
-	public void insertPlayer(long accountId, String summonerName) {
+	public void insertPlayer(Long accountId, String summonerName) {
 		PreparedStatement insertPlayer= null;
 		String insertStr = 
 				"INSERT INTO " + TABLE_PLAYERS + 
@@ -220,7 +236,7 @@ public class MySqlHelper {
 		}
 	}
 
-	public List<Pair<Long, String>> getPlayer() {
+	public List<Pair<Long, String>> getPlayers() {
 		List<Pair<Long, String>> ret = new ArrayList<>();
 		
 		Statement stmt = null;
@@ -243,7 +259,7 @@ public class MySqlHelper {
 		return ret;
 	}
 
-	public long getMostRecentMatchTime(long accountId) {
+	public Long getMostRecentMatchTime(Long accountId) {
 		PreparedStatement selectTimeStmt = null;
 		String selectStr = 
 				"SELECT " + COL_TIMESTAMP + " " +
@@ -296,5 +312,107 @@ public class MySqlHelper {
 		}
 		return champNameToId;
 	}
+	
+	public static void setFloatOrNull(PreparedStatement ps, int index, Float value) throws SQLException {
+	    if (value == null) {
+	        ps.setNull(index, Types.FLOAT);
+	    } else {
+	        ps.setFloat(index, value);
+	    }
+	}
+	
+	// Updating rows
+	private void updatePlayerMatches() {
+		ResultSet allMatches = getAllPlayerMatches();
+		RiotApiHelper helper = null;
+		try {
+			helper = new RiotApiHelper();
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.err.println("Failed to update player matches");
+			return;
+		}
+		
+		PreparedStatement updatePlayerMatch = null;
+		String updateStr = 
+				"UPDATE " + TABLE_PLAYERMATCHES + " SET " +
+				COL_CS_0_TO_10 + " = ?, " + COL_CS_10_TO_20 + " = ?, " +
+				COL_GOLD_0_TO_10 + " = ?, " + COL_GOLD_10_TO_20 + " = ?, " +
+				COL_XP_0_TO_10 + " = ?, " + COL_XP_10_TO_20 + " = ? " +
+				"WHERE " + COL_MATCH_ID + " = ? AND " + COL_ACCOUNT_ID + " = ?";
+		try {
+			updatePlayerMatch = conn.prepareStatement(updateStr);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return;
+		}
+		
+		try {
+			while (allMatches.next()) {
+				Long currMatchId = allMatches.getLong(COL_MATCH_ID);
+				JSONObject matchJsonObj = helper.getMatch(currMatchId);
+				
+				Long currAccId = allMatches.getLong(COL_ACCOUNT_ID);
+				Integer currChampId = allMatches.getInt(COL_CHAMPION_ID);
+				
+				RiotApiHelper.PlayerMatchStats pms = 
+						new RiotApiHelper.PlayerMatchStats(currAccId, currChampId, matchJsonObj);
+				
+				try {
+					conn.setAutoCommit(false);
+					
+					int index = 1;
+					
+					setFloatOrNull(updatePlayerMatch, index++, pms.getCs0to10());
+					setFloatOrNull(updatePlayerMatch, index++, pms.getCs10to20());
+					setFloatOrNull(updatePlayerMatch, index++, pms.getGold0to10());
+					setFloatOrNull(updatePlayerMatch, index++, pms.getGold10to20());
+					setFloatOrNull(updatePlayerMatch, index++, pms.getGold0to10());
+					setFloatOrNull(updatePlayerMatch, index++, pms.getGold10to20());;
+					updatePlayerMatch.setLong(index++, currMatchId);
+					updatePlayerMatch.setLong(index++, currAccId);
+					updatePlayerMatch.execute();
+					
+					System.out.println(updatePlayerMatch);
+					conn.commit();
+				} catch (SQLException e) {
+					e.printStackTrace();
+					try {
+						conn.rollback();
+					} catch (SQLException ex) {
+						ex.printStackTrace();
+					}
+				}			
+			}
+		} catch (SQLException | IOException | ParseException | InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private ResultSet getAllPlayerMatches() {
+		Statement stmt = null;
+		String selectStr = "SELECT * FROM " + TABLE_PLAYERMATCHES + " ORDER BY " + COL_MATCH_ID + " DESC";
+		try {
+			stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(selectStr);			
+			return rs;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			try {
+				conn.rollback();
+			} catch (SQLException ex) {
+				ex.printStackTrace();
+			}
+		}
+		return null;
+	}
+	
+	// MAIN FOR TESTING
+	public static void main(String[] args) {
+		MySqlHelper h = new MySqlHelper();
+		h.updatePlayerMatches();
+		System.out.println("COMPLETE");
+	}
+
 	
 }
