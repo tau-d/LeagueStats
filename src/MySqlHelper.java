@@ -105,7 +105,9 @@ public class MySqlHelper {
 				"INSERT INTO " + TABLE_PLAYERMATCHES + " (" + 
 					COL_ACCOUNT_ID +  "," + COL_MATCH_ID +  "," + COL_CHAMPION_ID +  "," + COL_QUEUE +  "," + 
 					COL_TIMESTAMP +  "," + COL_KILLS +  "," + COL_DEATHS +  "," + COL_ASSISTS +  "," + COL_WIN + "," +
-					COL_CS_0_TO_10 + "," + COL_CS_10_TO_20 + "," + COL_GOLD_0_TO_10 + "," + COL_GOLD_10_TO_20 + "," + COL_XP_0_TO_10 + "," + COL_XP_10_TO_20 + 
+					COL_CS_0_TO_10 + "," + COL_CS_10_TO_20 + "," + 
+					COL_GOLD_0_TO_10 + "," + COL_GOLD_10_TO_20 + "," + 
+					COL_XP_0_TO_10 + "," + COL_XP_10_TO_20 + 
 				") " + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		
 		try {
@@ -113,8 +115,8 @@ public class MySqlHelper {
 			insertStmt = conn.prepareStatement(insertStr);
 			
 			Integer index = 1;
-			insertStmt.setLong(index++, pms.getMatchId());
 			insertStmt.setLong(index++, pms.getAccountId());
+			insertStmt.setLong(index++, pms.getMatchId());
 			insertStmt.setInt(index++, pms.getChampionId());
 			insertStmt.setInt(index++, pms.getQueueId());
 			insertStmt.setLong(index++, pms.getTimestamp());
@@ -362,13 +364,12 @@ public class MySqlHelper {
 					conn.setAutoCommit(false);
 					
 					int index = 1;
-					
 					setFloatOrNull(updatePlayerMatch, index++, pms.getCs0to10());
 					setFloatOrNull(updatePlayerMatch, index++, pms.getCs10to20());
 					setFloatOrNull(updatePlayerMatch, index++, pms.getGold0to10());
 					setFloatOrNull(updatePlayerMatch, index++, pms.getGold10to20());
-					setFloatOrNull(updatePlayerMatch, index++, pms.getGold0to10());
-					setFloatOrNull(updatePlayerMatch, index++, pms.getGold10to20());;
+					setFloatOrNull(updatePlayerMatch, index++, pms.getXp0to10());
+					setFloatOrNull(updatePlayerMatch, index++, pms.getXp10to20());;
 					updatePlayerMatch.setLong(index++, currMatchId);
 					updatePlayerMatch.setLong(index++, currAccId);
 					updatePlayerMatch.execute();

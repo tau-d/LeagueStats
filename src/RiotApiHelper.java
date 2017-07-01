@@ -132,7 +132,6 @@ public class RiotApiHelper {
             		xp0to10 = RiotApiHelper.parseFloat(xpPerMinDeltas, zeroToTen);
             		xp10to20 = RiotApiHelper.parseFloat(xpPerMinDeltas, tenToTwenty);
             		
-            		//System.out.printf("%d %d %d %d %d %d %d %d %b %n", matchId, accountId, champId, queue, timestamp, kills, deaths, assists, win);
             		break;
             	}
             }
