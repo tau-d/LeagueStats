@@ -1,3 +1,5 @@
+package LeagueStats;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -35,7 +37,6 @@ public class RiotApiHelper {
 		String matchlistUrl = "https://na1.api.riotgames.com/lol/match/v3/matchlists/by-account/" + accountId + "/recent?api_key=" + apiKey;
 		String matchListJsonString = IOUtils.toString(new URL(matchlistUrl), "utf-8");
 		JSONObject matchListJsonObject = (JSONObject) JSONValue.parseWithException(matchListJsonString);
-		System.out.println(matchListJsonObject.toJSONString());
 		Thread.sleep(SLEEP_TIME);
 		
         return matchListJsonObject;

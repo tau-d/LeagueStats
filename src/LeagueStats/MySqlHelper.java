@@ -1,3 +1,5 @@
+package LeagueStats;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -19,6 +21,8 @@ import java.util.Map.Entry;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
+
+import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 
 public class MySqlHelper {
 	
@@ -203,6 +207,8 @@ public class MySqlHelper {
 				insertChamp.setString(2, name);
 				insertChamp.execute();
 				conn.commit();
+			} catch (MySQLIntegrityConstraintViolationException e) {
+				System.err.println(e.toString());
 			} catch (SQLException e) {
 				e.printStackTrace();
 				try {
@@ -411,7 +417,7 @@ public class MySqlHelper {
 	// MAIN FOR TESTING
 	public static void main(String[] args) {
 		MySqlHelper h = new MySqlHelper();
-		h.updatePlayerMatches();
+		
 		System.out.println("COMPLETE");
 	}
 

@@ -1,3 +1,5 @@
+package LeagueStats;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -13,7 +15,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
 
-// TODO: cs/min, cs/gold/xp/etc at 10/20 min
 // TODO: overall kda/winrate, playtime in different tabs?
 // TODO: exclude remakes (matches with duration < 300 seconds)
 
@@ -108,7 +109,6 @@ public class LeagueStats {
 	}
 	
 	private void addPlayerMatchStats(Long matchId, Long accountId, Integer champId, Long timestampLowerBound) {
-		System.out.println(matchId);
 		try {
             JSONObject matchStatsJsonObject = riotHelper.getMatch(matchId); 
             
@@ -130,7 +130,7 @@ public class LeagueStats {
 	
 	
 	// Database initialization methods
-	private void initChampionsTable() {
+	protected void initChampionsTable() {
 		JSONObject champDataJsonObject;
 		try {
 			champDataJsonObject = riotHelper.getChampions();
@@ -190,6 +190,7 @@ public class LeagueStats {
 //		ls.initPlayers();
 		
 		ls.addAllRecentPlayerMatches();
+//		ls.initChampionsTable();
 		
 //		for (Pair<Long, String> player : ls.getPlayerIds()) {
 //			System.out.println(player.getRight() + ": ");
