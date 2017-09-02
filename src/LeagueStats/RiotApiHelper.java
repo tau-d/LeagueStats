@@ -17,7 +17,7 @@ import org.json.simple.parser.ParseException;
 
 public class RiotApiHelper {
 
-	private static final long SLEEP_TIME = 1000 + 100; // 1 call per second plus some wiggle room 
+	private static final long SLEEP_TIME = (1000 + 100) / 20; // 20 requests per second plus some wiggle room 
 	
 	private String apiKey;
 	private Map<Long, JSONObject> cachedMatches = new HashMap<>();
