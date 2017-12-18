@@ -67,14 +67,14 @@ public class RiotApiHelper {
 		if (jsonObj == null) return null;
 		Object obj = jsonObj.get(key);
 		if (obj == null) return null;
-		else return ((Double) obj).floatValue();
+		else return (new Double(obj.toString())).floatValue();
 	}
 	
 	protected static Integer parseInt(JSONObject jsonObj, String key) {
 		if (jsonObj == null) return null;
 		Object obj = jsonObj.get(key);
 		if (obj == null) return null;
-		else return ((Long) obj).intValue();
+		else return (new Long(obj.toString())).intValue();
 	}
 	
 	protected static class PlayerMatchStats {
