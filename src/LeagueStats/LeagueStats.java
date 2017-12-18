@@ -189,6 +189,8 @@ public class LeagueStats {
 //		ls.initChampions();
 //		ls.initPlayers();
 		
+//		ls.initAllPlayerMatches();
+		
 		ls.addAllRecentPlayerMatches();
 //		ls.initChampionsTable();
 		

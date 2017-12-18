@@ -99,12 +99,9 @@ public class ChampionGGScraper {
         	HtmlDivision champNameDiv = div.getFirstByXPath(".//div[@class='ChampionName']");
         	String champName = champNameDiv.asText();
         	
-        	HtmlAnchor matchDetailButtonAnchor = div.getFirstByXPath(".//a[@class='Button MatchDetail']");
-        	String onclick = matchDetailButtonAnchor.getOnClickAttribute();
-        	
-        	int start = onclick.indexOf('(') + 1;
-        	int end = onclick.indexOf(',');
-        	Long matchId = Long.parseLong(onclick.substring(start, end));
+        	HtmlDivision gameItemDiv = (HtmlDivision) div.getFirstElementChild();
+        	String s = gameItemDiv.getAttribute("data-game-id");
+        	Long matchId = Long.parseLong(s);
         	
     		matchIdChampNamePairs.add(Pair.of(matchId, champNameToId.get(champName)));
         }
